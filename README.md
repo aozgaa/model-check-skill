@@ -36,6 +36,40 @@ to end the task while any counterexample log has no `.scenario.md`.
 
 Java (any recent JRE) on PATH. Everything else ships with the plugin.
 
+## Install
+
+### Claude Code
+
+The repo doubles as a single-plugin marketplace.
+From a local clone (or a GitHub `owner/repo` reference once pushed):
+
+```
+/plugin marketplace add /path/to/model-check
+/plugin install model-check@model-check
+```
+
+That registers everything: the skill, the `tla-modeler` agent (dispatchable as
+`model-check:tla-modeler`), the hooks, and `${CLAUDE_PLUGIN_ROOT}` for `scripts/tlc`.
+Verify with `/plugin` → Manage plugins.
+
+### Codex CLI
+
+Codex runs the skill but has no plugin layer, so the hook-based enforcement (layout
+reminders, the stop gate) does not apply — only the runner’s own refusals do.
+Clone the repo and link the skill into Codex’s skills directory (`~/.codex/skills/`, or
+the cross-runtime alias `~/.agents/skills/`):
+
+```
+git clone <this-repo> ~/r/model-check
+mkdir -p ~/.codex/skills
+ln -s ~/r/model-check/skills/model-check ~/.codex/skills/model-check
+```
+
+Where the skill says `${CLAUDE_PLUGIN_ROOT}`, use the checkout path: the runner is
+`~/r/model-check/scripts/tlc` and finds `tla2tools.jar` relative to itself (or set
+`TLA2TOOLS_JAR` explicitly).
+There is no subagent dispatch either; follow the skill’s workflow inline.
+
 ## Testing
 
 ```

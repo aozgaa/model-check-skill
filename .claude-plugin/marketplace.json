@@ -1,0 +1,14 @@
+{
+  "name": "model-check",
+  "owner": {
+    "name": "Arthur Ozga",
+    "email": "aozgaa@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "model-check",
+      "source": "./",
+      "description": "Debug state machines and concurrent systems with TLA+ model checking: model the code, check invariants with TLC, and map violations back to source-level scenarios and test cases."
+    }
+  ]
+}
