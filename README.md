@@ -35,3 +35,18 @@ refuses to end the task while any counterexample log has no `.scenario.md`.
 ## Requirements
 
 Java (any recent JRE) on PATH. Everything else ships with the plugin.
+
+## Testing
+
+```
+python3 -m unittest discover -s tests
+```
+
+Deterministic and zero-token: the LLM is faked by `tests/fake_agent.py`, which
+replays a scripted transcript of tool calls (file writes, runner invocations)
+and simulates the harness firing this plugin's hooks around them — only the
+plugin's real machinery (`scripts/tlc`, `scripts/layout-hook.py`, real TLC)
+executes. `tests/fixtures/jobqueue/` holds golden artifacts from a verified
+agent run of a genuine TOCTOU race; `test_pipeline.py` replays that run
+end-to-end and asserts the machinery blocks a non-compliant stop and admits a
+compliant one.
