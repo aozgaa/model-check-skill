@@ -5,7 +5,7 @@ fires this plugin's hooks around them (PostToolUse after writes, Stop /
 SubagentStop when the agent tries to finish). For testing, the LLM is
 replaced by a scripted transcript of tool calls, so runs are deterministic
 and cost nothing; only the plugin's own machinery (scripts/tlc,
-scripts/layout-hook.py) actually executes.
+scripts/layout_hook.py) actually executes.
 """
 
 import json
@@ -16,11 +16,13 @@ import sys
 
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUNNER = os.path.join(PLUGIN_ROOT, "scripts", "tlc")
-HOOK = os.path.join(PLUGIN_ROOT, "scripts", "layout-hook.py")
+HOOK = os.path.join(PLUGIN_ROOT, "scripts", "layout_hook.py")
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
 
-class HookResult:
+class HookResult:  # pylint: disable=too-few-public-methods
+    """Parsed outcome of one hook invocation (exit code + JSON decision)."""
+
     def __init__(self, proc):
         self.exit_code = proc.returncode
         self.stderr = proc.stderr
@@ -45,6 +47,7 @@ def fire_hook(event, cwd, **fields):
         capture_output=True,
         text=True,
         cwd=cwd,
+        check=False,  # hook exit codes are the signal under test
     )
     return HookResult(proc)
 
@@ -61,7 +64,7 @@ class FakeAgent:
         """Write tool call + the PostToolUse hook the harness would fire."""
         path = os.path.join(self.workdir, relpath)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
         result = fire_hook(
             "PostToolUse",
@@ -73,7 +76,7 @@ class FakeAgent:
         return result
 
     def write_fixture(self, relpath, fixture):
-        with open(os.path.join(FIXTURES, fixture)) as f:
+        with open(os.path.join(FIXTURES, fixture), encoding="utf-8") as f:
             return self.write(relpath, f.read())
 
     def run_tlc(self, spec_relpath, *args):
@@ -84,6 +87,7 @@ class FakeAgent:
             text=True,
             cwd=self.workdir,
             env={**os.environ, "CLAUDE_PLUGIN_ROOT": PLUGIN_ROOT},
+            check=False,  # runner exit codes are the signal under test
         )
         return proc
 

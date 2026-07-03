@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/layout-hook.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/layout_hook.py\""
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/layout-hook.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/layout_hook.py\""
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/layout-hook.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/layout_hook.py\""
           }
         ]
       }

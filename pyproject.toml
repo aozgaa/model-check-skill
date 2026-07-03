@@ -1,0 +1,6 @@
+[tool.pylint."messages control"]
+# unittest method names are their own documentation
+disable = ["missing-class-docstring", "missing-function-docstring"]
+
+[tool.mypy]
+mypy_path = "tests"

@@ -41,7 +41,7 @@ class PipelineTest(unittest.TestCase):
         proc = agent.run_tlc(f"{model}/JobQueue.tla")
         self.assertEqual(proc.returncode, 12)
         log = agent.log_path_from(proc)
-        with open(log) as f:
+        with open(log, encoding="utf-8") as f:
             self.assertIn("Error: Invariant AtMostOnce is violated.", f.read())
 
         # Step 4: agent tries to finish without back-mapping -> gate blocks
@@ -52,7 +52,8 @@ class PipelineTest(unittest.TestCase):
 
         # Step 5: agent writes the scenario the gate named -> may finish
         scenario = log[: -len(".log")] + ".scenario.md"
-        with open(os.path.join(os.path.dirname(__file__), "fixtures/jobqueue/scenario.md")) as f:
+        fixture = os.path.join(os.path.dirname(__file__), "fixtures/jobqueue/scenario.md")
+        with open(fixture, encoding="utf-8") as f:
             agent.write(os.path.relpath(scenario, agent.workdir), f.read())
         self.assertFalse(agent.try_stop("SubagentStop").blocked)
 

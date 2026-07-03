@@ -56,7 +56,7 @@ def unmapped_violations(root):
                 continue
             log = os.path.join(dirpath, name)
             try:
-                with open(log, errors="replace") as f:
+                with open(log, encoding="utf-8", errors="replace") as f:
                     if not VIOLATION_RE.search(f.read()):
                         continue
             except OSError:

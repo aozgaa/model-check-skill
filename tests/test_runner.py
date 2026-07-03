@@ -65,7 +65,7 @@ class RunnerTest(unittest.TestCase):
         log = self.agent.log_path_from(proc)
         self.assertIsNotNone(log)
         self.assertIn("/verification/Bump/traces/", log)
-        with open(log) as f:
+        with open(log, encoding="utf-8") as f:
             self.assertIn("Error: Invariant Inv is violated.", f.read())
 
         # the runner demands the back-mapping artifacts

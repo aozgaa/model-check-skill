@@ -1,0 +1,21 @@
+# Golden artifacts (incl. a deliberately buggy fixture) must stay verbatim.
+exclude: ^tests/fixtures/
+
+repos:
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.1.0
+    hooks:
+      - id: mypy
+
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v4.0.6
+    hooks:
+      - id: pylint
+
+  - repo: local
+    hooks:
+      - id: flowmark
+        name: flowmark (markdown formatting)
+        entry: flowmark --auto
+        language: system
+        types: [markdown]

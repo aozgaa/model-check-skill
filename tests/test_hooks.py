@@ -1,4 +1,4 @@
-"""scripts/layout-hook.py: PostToolUse reminders and the Stop gate."""
+"""scripts/layout_hook.py: PostToolUse reminders and the Stop gate."""
 
 import os
 import shutil
@@ -44,7 +44,11 @@ class PostToolUseTest(unittest.TestCase):
 
     def test_garbage_stdin_is_harmless(self):
         proc = subprocess.run(
-            [sys.executable, HOOK], input="not json", capture_output=True, text=True
+            [sys.executable, HOOK],
+            input="not json",
+            capture_output=True,
+            text=True,
+            check=False,
         )
         self.assertEqual(proc.returncode, 0)
 
@@ -84,7 +88,7 @@ class StopGateTest(unittest.TestCase):
         for skipped in (".git", "node_modules"):
             path = os.path.join(self.workdir, skipped, "traces", "M-1.log")
             os.makedirs(os.path.dirname(path))
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(VIOLATION_LOG)
         self.assertFalse(self.agent.try_stop().blocked)
 
