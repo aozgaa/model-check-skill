@@ -13,6 +13,8 @@ import os
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
+from typing import Optional
 
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUNNER = os.path.join(PLUGIN_ROOT, "scripts", "tlc")
@@ -20,21 +22,17 @@ HOOK = os.path.join(PLUGIN_ROOT, "scripts", "layout_hook.py")
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
 
-class HookResult:  # pylint: disable=too-few-public-methods
+@dataclass
+class HookResult:
     """Parsed outcome of one hook invocation (exit code + JSON decision)."""
 
-    def __init__(self, proc):
-        self.exit_code = proc.returncode
-        self.stderr = proc.stderr
-        self.decision = None
-        self.reason = ""
-        if proc.stdout.strip():
-            out = json.loads(proc.stdout)
-            self.decision = out.get("decision")
-            self.reason = out.get("reason", "")
+    exit_code: int
+    stderr: str
+    decision: Optional[str] = None
+    reason: str = ""
 
     @property
-    def blocked(self):
+    def blocked(self) -> bool:
         return self.decision == "block" or self.exit_code == 2
 
 
@@ -49,7 +47,13 @@ def fire_hook(event, cwd, **fields):
         cwd=cwd,
         check=False,  # hook exit codes are the signal under test
     )
-    return HookResult(proc)
+    out = json.loads(proc.stdout) if proc.stdout.strip() else {}
+    return HookResult(
+        exit_code=proc.returncode,
+        stderr=proc.stderr,
+        decision=out.get("decision"),
+        reason=out.get("reason", ""),
+    )
 
 
 class FakeAgent:
