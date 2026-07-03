@@ -52,23 +52,25 @@ That registers everything: the skill, the `tla-modeler` agent (dispatchable as
 `model-check:tla-modeler`), the hooks, and `${CLAUDE_PLUGIN_ROOT}` for `scripts/tlc`.
 Verify with `/plugin` → Manage plugins.
 
-### Codex CLI
+### Codex
 
-Codex runs the skill but has no plugin layer, so the hook-based enforcement (layout
-reminders, the stop gate) does not apply — only the runner’s own refusals do.
-Clone the repo and link the skill into Codex’s skills directory (`~/.codex/skills/`, or
-the cross-runtime alias `~/.agents/skills/`):
+Codex plugins share this repo’s layout: `.codex-plugin/plugin.json` is the Codex
+manifest (skills + hooks), and Codex also reads the legacy
+`.claude-plugin/marketplace.json`. Once the repo is pushed:
 
 ```
-git clone <this-repo> ~/r/model-check
-mkdir -p ~/.codex/skills
-ln -s ~/r/model-check/skills/model-check ~/.codex/skills/model-check
+codex plugin marketplace add <owner>/model-check
 ```
 
-Where the skill says `${CLAUDE_PLUGIN_ROOT}`, use the checkout path: the runner is
-`~/r/model-check/scripts/tlc` and finds `tla2tools.jar` relative to itself (or set
-`TLA2TOOLS_JAR` explicitly).
-There is no subagent dispatch either; follow the skill’s workflow inline.
+then run `/plugins` in the CLI and install `model-check` from the marketplace entry (or
+use the Plugins section of the Codex app).
+Invoke with `@model-check`.
+
+Everything carries over except subagents: Codex supports all three hook events this
+plugin uses (`PostToolUse`, `Stop`, `SubagentStop`) with the same blocking semantics,
+and provides `${CLAUDE_PLUGIN_ROOT}` (alias `${PLUGIN_ROOT}`) to hooks for
+compatibility. `agents/tla-modeler.md` is Claude Code-only — under Codex, follow the
+skill’s workflow inline instead of dispatching it.
 
 ## Testing
 

@@ -25,6 +25,8 @@ find_jar() {
         echo "$TLA2TOOLS_JAR"
     elif [[ -n "${CLAUDE_PLUGIN_ROOT:-}" && -f "${CLAUDE_PLUGIN_ROOT}/tla2tools.jar" ]]; then
         echo "${CLAUDE_PLUGIN_ROOT}/tla2tools.jar"
+    elif [[ -n "${PLUGIN_ROOT:-}" && -f "${PLUGIN_ROOT}/tla2tools.jar" ]]; then
+        echo "${PLUGIN_ROOT}/tla2tools.jar"   # Codex-native name for the same thing
     elif [[ -f "${SCRIPT_DIR}/../tla2tools.jar" ]]; then
         echo "${SCRIPT_DIR}/../tla2tools.jar"
     else

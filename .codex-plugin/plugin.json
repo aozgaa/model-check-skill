@@ -1,0 +1,11 @@
+{
+  "name": "model-check",
+  "version": "0.1.0",
+  "description": "Debug state machines and concurrent systems with TLA+ model checking: model the code, check invariants with TLC, and map violations back to source-level scenarios and test cases.",
+  "author": {
+    "name": "Arthur Ozga",
+    "email": "aozgaa@gmail.com"
+  },
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}
