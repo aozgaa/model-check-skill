@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Run the TLC model checker on a spec inside a model-check verification layout.
+#
+# Usage:
+#   tlc <path/to/Module.tla> [extra TLC args...]
+#   tlc --all [verification-root]        # check every spec under the root
+#
+# Layout enforced for each model directory (refuses to run otherwise):
+#   verification/<System>/
+#     <Module>.tla     the spec
+#     <Module>.cfg     TLC config (INIT/NEXT or SPECIFICATION, INVARIANT, ...)
+#     MAPPING.md       source <-> model mapping table
+#     traces/          TLC logs and back-mapped scenarios (created on demand)
+#
+# Every run is logged to traces/<Module>-<utc-timestamp>.log. When TLC finds a
+# counterexample, the task is NOT complete until a sibling
+# traces/<Module>-<utc-timestamp>.scenario.md back-maps the trace to source.
+
+set -u
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+find_jar() {
+    if [[ -n "${TLA2TOOLS_JAR:-}" && -f "${TLA2TOOLS_JAR:-}" ]]; then
+        echo "$TLA2TOOLS_JAR"
+    elif [[ -n "${CLAUDE_PLUGIN_ROOT:-}" && -f "${CLAUDE_PLUGIN_ROOT}/tla2tools.jar" ]]; then
+        echo "${CLAUDE_PLUGIN_ROOT}/tla2tools.jar"
+    elif [[ -f "${SCRIPT_DIR}/../tla2tools.jar" ]]; then
+        echo "${SCRIPT_DIR}/../tla2tools.jar"
+    else
+        return 1
+    fi
+}
+
+JAR="$(find_jar)" || {
+    echo "error: tla2tools.jar not found (set TLA2TOOLS_JAR or install the model-check plugin)" >&2
+    exit 1
+}
+
+check_layout() {
+    local tla="$1" dir base ok=0
+    dir="$(cd "$(dirname "$tla")" && pwd)"
+    base="$(basename "$tla" .tla)"
+    if [[ ! -f "$dir/$base.cfg" ]]; then
+        echo "layout error: $dir/$base.cfg is missing." >&2
+        echo "  Every spec needs a TLC config next to it (INIT/NEXT or SPECIFICATION, INVARIANT ...)." >&2
+        ok=1
+    fi
+    if [[ ! -f "$dir/MAPPING.md" ]]; then
+        echo "layout error: $dir/MAPPING.md is missing." >&2
+        echo "  MAPPING.md must table the correspondence: source file:line <-> model variable/action." >&2
+        ok=1
+    fi
+    return $ok
+}
+
+run_one() {
+    local tla="$1"; shift
+    local dir base ts log rc
+    dir="$(cd "$(dirname "$tla")" && pwd)"
+    base="$(basename "$tla" .tla)"
+
+    check_layout "$tla" || return 3
+
+    mkdir -p "$dir/traces"
+    ts="$(date -u +%Y%m%dT%H%M%SZ)"
+    log="$dir/traces/$base-$ts.log"
+
+    ( cd "$dir" && java -XX:+UseParallelGC -jar "$JAR" \
+        -workers auto -metadir "traces/.tlc-meta" -cleanup \
+        "$@" "$base.tla" ) 2>&1 | tee "$log"
+    rc=${PIPESTATUS[0]}
+
+    # TLC's -cleanup misses the metadir on violation exits; the log and TTrace
+    # spec preserve everything worth keeping.
+    rm -rf "$dir/traces/.tlc-meta"
+
+    # v1.8.0 drops a trace-exploration spec next to the .tla; keep it with the trace.
+    local ttrace
+    for ttrace in "$dir/${base}_TTrace_"*.tla "$dir/${base}_TTrace_"*.bin; do
+        [[ -e "$ttrace" ]] && mv "$ttrace" "$dir/traces/"
+    done
+
+    echo ""
+    echo "log: $log"
+    if grep -qE 'Error: (Invariant .* is violated|Deadlock reached|Temporal properties were violated|Action property .* is violated)' "$log"; then
+        cat >&2 <<EOF
+==> COUNTEREXAMPLE FOUND (exit $rc).
+==> REQUIRED before this task can be considered complete:
+==>   1. Write $dir/traces/$base-$ts.scenario.md back-mapping every trace step
+==>      to source (file:line, thread/process, and concrete interleaving),
+==>      using $dir/MAPPING.md.
+==>   2. Where feasible, add an executable failing test to the project that
+==>      forces this interleaving, and reference it from the scenario file.
+EOF
+        return "$rc"
+    fi
+    if [[ "$rc" -ne 0 ]]; then
+        echo "==> TLC failed (exit $rc) without producing a counterexample; see log (parse/semantic/config error?)." >&2
+        return "$rc"
+    fi
+    echo "==> No violation found. States explored are in the log; consider whether constants are large enough to be meaningful."
+    return 0
+}
+
+if [[ "${1:-}" == "--all" ]]; then
+    root="${2:-verification}"
+    [[ -d "$root" ]] || { echo "error: no such directory: $root" >&2; exit 1; }
+    rc=0
+    while IFS= read -r -d '' tla; do
+        echo "=== $tla ==="
+        run_one "$tla" || rc=$?
+    done < <(find "$root" -name '*.tla' -not -path '*/traces/*' -print0 | sort -z)
+    exit "$rc"
+fi
+
+[[ $# -ge 1 && "${1##*.}" == "tla" ]] || {
+    sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
+    exit 1
+}
+tla="$1"; shift
+[[ -f "$tla" ]] || { echo "error: no such file: $tla" >&2; exit 1; }
+run_one "$tla" "$@"
